@@ -1,0 +1,55 @@
+version: '3.5'
+
+services:
+  drone-server:
+    image: drone/drone:latest
+    ports:
+      - 8000:80
+    networks:
+      - drone
+    volumes:
+      - ./data:/var/lib/drone/
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ./drone.env
+    restart: always
+    environment:
+      - DRONE_GITHUB_SKIP_VERIFY=true
+      - DRONE_AGENTS_ENABLED=true
+      - DRONE_TLS_AUTOCERT=false
+      - DRONE_OPEN=false
+      - DRONE_HOST=http://localhost:8000
+      - DRONE_GITHUB=true
+
+  drone-agent:
+    image: drone/agent:latest
+    command: agent
+    restart: always
+    depends_on:
+      - drone-server
+    networks:
+      - drone
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ./drone.env
+    environment:
+      - DRONE_RPC_HOST=drone-server:8000
+      - DRONE_RPC_PROTO=http
+    
+  caddy:
+    image: "abiosoft/caddy:latest"
+    depends_on:
+      - drone-server
+      - drone-agent
+    networks:
+      - drone
+    volumes:
+      - ./.caddy:/root/.caddy 
+      - ./Caddyfile:/etc/Caddyfile 
+    ports:
+      - "80:80"
+      - "443:443"
+networks:
+  drone:
+    name: drone_network

@@ -1,0 +1,10 @@
+yyy.xxx.com {
+    gzip {
+        not /stream/
+        not /api/
+    }
+    proxy / localhost:8000 {
+        websocket
+	transparent
+    }
+}
